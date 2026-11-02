@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+import re
+import sys
+
+logfile = sys.argv[1]
+key = sys.argv[2]
+ip = []
+sql_ip=[]
+attacker_ip_list =[]
+sql_att_list =[]
+dir_ip =[]
+
+dir_att_list=[]
+attacks = False 
+with open(logfile, 'r') as infile, open('access.log', 'w') as outfile:
+
+
+	for line in infile:
+		cleanline = line.strip()
+		oneline = list(cleanline)
+		i = 0
+		broken_line=[]
+		for char in oneline:
+			if char.isalpha():
+				if char.isupper():
+					broken_line.append(chr((ord(char)-ord(key[i%len(key)])+26)%26+65))
+					i=i+1
+				else:
+					broken_line.append(chr((ord(char) - ord(key[i % len(key)])-6)%26+97))
+					i =i+1
+			else:
+				broken_line.append(char)
+
+		finalstring="".join(broken_line)
+		outfile.write(finalstring + '\n')
+		if(re.search("401", finalstring) != None):
+
+			x = finalstring.split(" - - ")
+			ip.append(x)
+		if(re.search(r"DROP TABLE|OR 1=1|OR '1'='1'", finalstring) != None):
+
+			y = finalstring.split(" - - ")
+			sql_ip.append(y)
+		if(re.search(r"\.\./", finalstring) != None):
+
+			z = finalstring.split(" - - ")
+			dir_ip.append(z)
+with open ('finding.txt', 'w') as output:
+	output.write("BLUE TEAM INVESTIGATION FINDINGS\n")
+	output.write("\n")	
+	output.write("Brute Force Attack\n")
+	dictionary = {}
+	for address, detail in ip:
+		if address not in dictionary:
+			dictionary[address]=[]
+		dictionary[address].append(detail)
+	for addr in dictionary:
+		if len(dictionary[addr]) >4:
+			attacker_ip_list.append(addr)
+			attacks = True
+	for att in attacker_ip_list:
+		dictionary[att].sort()
+		dictionary[att][0] = dictionary[att][0][0:27]
+		dictionary[att][-1] = dictionary[att][-1][0:27]
+		output.write(f"Attacker IP: {att}\nFirst Try: {dictionary[att][0]}\nLast Try: {dictionary[att][-1]}\nTotal Attempts: {len(dictionary[att])}\n")
+		output.write("\n")
+		print(f"[ALERT] Brute Force from {att}({len(dictionary[att])} failed logins)\n")
+	output.write("SQL Injection\n ")
+	sql_dictionary = {}
+	for saddress, sdetail in sql_ip:
+		if saddress not in sql_dictionary:
+			sql_dictionary[saddress]=[]
+		sql_dictionary[saddress].append(sdetail)
+	for saddr in sql_dictionary:
+		sql_att_list.append(saddr)
+	for satt in sql_att_list:
+		sql_dictionary[satt].sort()
+		sql_dictionary[satt][0] = sql_dictionary[satt][0][0:27]
+		sql_dictionary[satt][-1] = sql_dictionary[satt][-1][0:27]
+		output.write(f"Attacker IP: {satt}\nFirst Try: {sql_dictionary[satt][0]}\nLast Try: {sql_dictionary[satt][-1]}\nTotal Attempts: {len(sql_dictionary[satt])}\n")
+		output.write("\n")
+		print(f"[ALERT] SQL injection from {satt}({len(sql_dictionary[satt])} attempts)\n")
+	output.write("Directory traversal\n")
+	dir_dict = {}
+	for daddress, ddetail in dir_ip:
+		if daddress not in dir_dict:
+			dir_dict[daddress] = []
+		dir_dict[daddress].append(ddetail)
+	for daddr in dir_dict:
+		dir_att_list.append(daddr)
+	for datt in dir_att_list:
+		dir_dict[datt].sort()
+		dir_dict[datt][0] = dir_dict[datt][0][0:27]
+		dir_dict[datt][-1] = dir_dict[datt][-1][0:27]
+		output.write(f"Attacker IP: {datt}\nFirst Try: {dir_dict[datt][0]}\nLast Try: {dir_dict[datt][-1]}\nTotal Attempts: {len(dir_dict[datt])}\n") 
+		output.write("\n")
+		print(f"[ALERT] Directory Traversal from {datt}({len(dir_dict[datt])} attempts)\n")
+if attacks:
+	sys.exit(1)
+else:
+	sys.exit(0)

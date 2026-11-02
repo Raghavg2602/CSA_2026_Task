@@ -1,0 +1,17 @@
+An HTTP 401 response indicates that the user lacks the valid authentication credentials. Such a request is generated when an attempt is made to login using the wrong login credentials. In the given data, certain IP addresses were repeatedly getting a lot of HTTP 401 responses in a very short interval of time, which suggests an attempt at brute forcing i.e. trying different passwords until one of them clicks. 
+The second type of attack was an SQL injection attack, wherein, the hacker tries to inject SQL commands into the backend code of the web app. The simplest way this is done is to type in for example 5 OR 1=1, at the end of the URL. Since 5 OR 1=1, always evaluates to true, this leads to hacker getting unauthorised data. 
+The third type of attack was a Directory traversal attack. The hacker looks for URLs that clearly instruct the backend server to pull a specific file from its hard drive. The ../ sequence instructs the server to go up one step in the directory structure, this way the attacker can reach the root directory and access sensitive details like the source code, passwords etc. 
+
+The brute force attacks target Authorization and authentication modules of the web app. 
+The SQL attacks target the Database Layer of the web app. 
+The directory traversal target the file system and server infrastructure of the web app. 
+
+This is a very severe incident as the SQL attacks were successful in extracting data out of the application. We deduce this by the fact that one of the SQL statements contained an HTTP 200 response, which corresponds to OK status, which implies that instead of identifying a malicious request, the web app printed out the data asked by the hacker. This is incident suggests that this attack should be considered one of high severity. 
+
+Preventive measures:
+To prevent Brute force attacks, one simple measure is to have a restriction on the maximum no. of failed attempts. If an IP address generates more than, say, 5 wrong attempts, then the website should temporarily lock them out. CAPTCHA and MFA(Multi Factor Authentication similar to the 2 factor authentication in Gmail) are also effective.
+
+To prevent SQL attacks, instead concatenating the user input directly into the query, we use Parameterized  Queries. Here, the query is precompiled in the database, and the user input is passed separately as a string literal. So instead of evaluating OR as logical keyword and 1=1 as a Boolean value, we treat OR 1=1 as a string. Due to this the database only returns data corresponding to that particular address. Thereby preventing the SQL attack.
+
+To prevent Directory Traversal, instead of letting users pass direct filenames like image.png(for example) we assign each file a unique ID, and then we check the file name entered by the user, and we only accept that input after matching it with the list of unique ID's, this way, sequences like ../ can not enter. 
+Also before returning any file as output, we should check its absolute path against that of a safe base directory. If it does not begin with the name of the safe base directory, then we dont return that file, and throw an error message.
